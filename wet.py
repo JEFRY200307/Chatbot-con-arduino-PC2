@@ -1,3 +1,7 @@
+
+
+# Lista de valores de calibración con el sensor en estado "wet" (suelo completamente húmedo)
+
 valores_wet = [
     355,193,336,417,299,238,352,404,252,247,348,421,324,196,314,374,362,201,363,203,
     292,362,379,214,282,362,387,220,283,368,368,185,327,365,353,183,331,416,283,266,
@@ -9,5 +13,6 @@ valores_wet = [
     341,209,334,403,260,269,350,348,202,321,384,293,250,343,349,199,337,388
 ]
 
+# Cálculo del promedio redondeado
 promedio_wet = round(sum(valores_wet) / len(valores_wet))
 print(f"🔹 Valor promedio 'wet': {promedio_wet}")
