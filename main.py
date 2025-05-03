@@ -1,43 +1,34 @@
 from datetime import datetime
-import time
+import time, sys
 
+from lector_serial import iniciar_puerto, leer_datos
+from guardador      import init_csv, append_csv
+from graficador     import Graficador
 
-# Importamos módulos personalizados
-from lector_serial import iniciar_arduino, leer_valor_crudo
-from graficador import Graficador
-from guardador import GuardadorCSV
-from calculador import calcular_humedad
+def main():
+    ser = iniciar_puerto()
+    if ser is None:
+        sys.exit(1)
 
-# Inicialización de la conexión con Arduino
-arduino = iniciar_arduino('COM7', 9600)
-# Inicialización de graficador en tiempo real
-graf = Graficador()
-# Inicialización del guardador de datos CSV
-guarda = GuardadorCSV()
+    init_csv()
+    graf = Graficador()
+    print("⏳ Leyendo datos… Ctrl+C para detener.")
 
-print("⏳ Leyendo datos crudos... Ctrl+C para detener.")
+    try:
+        while True:
+            datos = leer_datos(ser)
+            if datos:
+                raw, pct = datos
+                ts = datetime.now().strftime("%H:%M:%S")
+                print(f"{ts} → raw:{raw}  pct:{pct}%")
+                append_csv(ts, raw, pct)
+                graf.actualizar(ts, pct)
+            time.sleep(0.5)
 
-try:
-    # Bucle infinito para lectura continua
-    while True:
-        # Leemos un valor crudo desde Arduino
-        valor = leer_valor_crudo(arduino)
-        if valor is not None:
-             # Calculamos humedad (%) usando valores de calibración wet y dry
-            humedad = calcular_humedad(valor, wet=250, dry=450)
-            # Obtenemos la hora actual (HH:MM:SS)
-            hora = datetime.now().strftime("%H:%M:%S")
-            # Mostramos en consola
-            print(f"{hora} - Valor: {valor} - Humedad: {humedad}%")
-            # Actualizamos la gráfica con el nuevo punto
-            graf.actualizar(hora, humedad)
-            # Esperamos 1 segundo antes de la siguiente lectura
-            guarda.agregar(hora, humedad)
-        time.sleep(1)
+    except KeyboardInterrupt:
+        print("\n🔌 Detenido por usuario.")
+    finally:
+        ser.close()
 
-except KeyboardInterrupt:
-    # Al interrumpir, guardamos todos los datos en CSV
-    guarda.guardar()
-    # Cerramos la conexión con Arduino
-    arduino.close()
-    print("🔚 Finalizado.")
+if __name__ == "__main__":
+    main()
