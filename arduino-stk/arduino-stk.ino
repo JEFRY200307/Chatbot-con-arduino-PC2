@@ -6,7 +6,7 @@ LiquidCrystal_I2C lcd(0x27, 16, 2);
 #define WET_THRESHOLD     210
 #define DRY_THRESHOLD     510
 #define BUZZER_PIN        11      // conecta un cable del buzzer a digital 8 y otro a GND
-#define HUMIDITY_ALERT    45     // porcentaje a partir del cual suena la alarma
+#define HUMIDITY_ALERT    60     // porcentaje a partir del cual suena la alarma
 
 void setup() {
   pinMode(BUZZER_PIN, OUTPUT);
