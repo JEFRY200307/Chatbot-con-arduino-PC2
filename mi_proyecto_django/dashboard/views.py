@@ -27,9 +27,53 @@ def generar_grafico_humedad_en_memoria():
     buffer.seek(0)
     return buffer
 
+def generar_grafico_clasificacion_humedad_en_memoria():
+    ruta_csv = os.path.join(settings.BASE_DIR, 'humedad_datos.csv')
+    df = pd.read_csv(ruta_csv)
+    
+    # Convertir timestamp a datetime para formato amigable en eje X
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    
+    def clasificar_humedad(h):
+        if h <= 60:
+            return 'Normal'
+        else:
+            return 'Alto'
+
+    df['categoria'] = df['humidity_pct'].apply(clasificar_humedad)
+    
+    colores = {'Normal': 'green', 'Alto': 'red'}
+    df['color'] = df['categoria'].map(colores)
+
+    plt.figure(figsize=(14, 6))
+    bars = plt.bar(df['timestamp'], df['humidity_pct'], color=df['color'])
+    
+    import matplotlib.patches as mpatches
+    leyenda = [mpatches.Patch(color=color, label=cat) for cat, color in colores.items()]
+    plt.legend(handles=leyenda)
+
+    plt.xlabel('Hora')
+    plt.ylabel('Humedad (%)')
+    plt.title('Clasificación de Humedad por nivel crítico')
+    plt.grid(axis='y', linestyle='--', alpha=0.5)
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format='png')
+    plt.close()
+    buffer.seek(0)
+    return buffer
+
+
 def grafico_humedad(request):
     buffer = generar_grafico_humedad_en_memoria()
     return HttpResponse(buffer.getvalue(), content_type='image/png')
+
+def grafico_clasificacion_humedad(request):
+    buffer = generar_grafico_clasificacion_humedad_en_memoria()
+    return HttpResponse(buffer.getvalue(), content_type='image/png')
+
 
 def dashboard_view(request):
     return render(request, 'dashboard/dashboard.html')
