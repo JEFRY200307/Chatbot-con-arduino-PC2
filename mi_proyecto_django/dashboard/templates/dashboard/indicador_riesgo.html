@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Indicador de Riesgo de Humedad</title>
+    <style>
+        .semaforo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin: 20px auto;
+        }
+        .verde { background-color: green; }
+        .amarillo { background-color: yellow; }
+        .rojo { background-color: red; }
+        .gris { background-color: gray; }
+        .texto {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .leyenda {
+            max-width: 300px;
+            margin: 30px auto;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+        .leyenda-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .color-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        .verde-box { background-color: green; }
+        .amarillo-box { background-color: yellow; }
+        .rojo-box { background-color: red; }
+        .gris-box { background-color: gray; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align:center;">Indicador de Riesgo de Humedad</h2>
+    <div class="semaforo {% if color == 'green' %}verde{% elif color == 'yellow' %}amarillo{% elif color == 'red' %}rojo{% else %}gris{% endif %}"></div>
+    <p class="texto">Estado: {{ nivel }}</p>
+    <p class="texto">Humedad: {{ humedad }}%</p>
+
+    <div class="leyenda">
+        <h3>Leyenda de Riesgo</h3>
+        <div class="leyenda-item">
+            <div class="color-box verde-box"></div>
+            <span>Normal (≤ 60%)</span>
+        </div>
+        <div class="leyenda-item">
+            <div class="color-box amarillo-box"></div>
+            <span>Moderado (61% - 80%)</span>
+        </div>
+        <div class="leyenda-item">
+            <div class="color-box rojo-box"></div>
+            <span>Alto (&gt; 80%)</span>
+        </div>
+        <div class="leyenda-item">
+            <div class="color-box gris-box"></div>
+            <span>Sin datos</span>
+        </div>
+    </div>
+</body>
+</html>
+

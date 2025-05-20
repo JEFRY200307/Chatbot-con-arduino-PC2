@@ -1,0 +1,89 @@
+{% load tz %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Historial de Humedad</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        .contenedor {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+        }
+
+        .tabla-humedad {
+            flex: 1;
+        }
+
+        .tabla-humedad table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .tabla-humedad th, .tabla-humedad td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        .tabla-humedad th {
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+
+        .grafico {
+            flex: 1;
+            max-width: 600px;
+        }
+
+        .grafico img {
+            width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Historial del {{ fecha }}</h1>
+
+    <div class="contenedor">
+        <div class="tabla-humedad">
+            <h3>Registros</h3>
+            <table>
+                <tr>
+                    <th>Hora</th>
+                    <th>Humedad (%)</th>
+                </tr>
+                {% for registro in registros %}
+                <tr>
+                    <td>{{ registro.timestamp|localtime|time:"H:i:s" }}</td>
+                    <td>{{ registro.humedad }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2">No hay datos disponibles para esta fecha.</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <div class="grafico">
+            <h3>Evolución del día</h3>
+            {% if grafico %}
+                <img src="data:image/png;base64,{{ grafico }}" alt="Gráfico de humedad">
+            {% else %}
+                <p>No hay gráfico disponible.</p>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

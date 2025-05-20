@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>Historial de Humedad por Día</title>
+</head>
+<body>
+    <h2>Historial de Humedad por Día</h2>
+    <a href="{% url 'dashboard' %}">Volver al Dashboard</a>
+    <ul>
+        {% for registro in datos_diarios %}
+            <li>
+                {{ registro.dia }}  
+                - <a href="{% url 'historial_detalle' registro.dia %}">Ver detalles</a>
+            </li>
+        {% empty %}
+            <li>No hay datos registrados.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

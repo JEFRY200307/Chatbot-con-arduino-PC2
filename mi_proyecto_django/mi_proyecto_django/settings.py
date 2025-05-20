@@ -78,7 +78,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'humedad_db',         # el nombre de tu base de datos
         'USER': 'postgres',           # el usuario que creaste
-        'PASSWORD': '1234',  # la contraseña del usuario
+        'PASSWORD': 'PostSQL',  # la contraseña del usuario
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -108,7 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Lima'
 
 USE_I18N = True
 
