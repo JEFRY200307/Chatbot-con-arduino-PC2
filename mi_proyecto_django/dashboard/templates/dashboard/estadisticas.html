@@ -1,25 +1,53 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Humedad en Tiempo Real</title>
-  <script>
-    async function actualizarEstadisticas() {
-      const res = await fetch("/dashboard/api/estadisticas/");
-      const data = await res.json();
-      document.getElementById("promedio").innerText = data.promedio.toFixed(2) + " %";
-      document.getElementById("minimo").innerText = data.minimo + " %";
-      document.getElementById("maximo").innerText = data.maximo + " %";
-    }
-
-    setInterval(actualizarEstadisticas, 3000); // cada 3 segundos
-    window.onload = actualizarEstadisticas;
-  </script>
+    <meta charset="UTF-8">
+    <title>Dashboard de Humedad</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 </head>
 <body>
-  <h1>Estadísticas de Humedad</h1>
-  <p><strong>Promedio:</strong> <span id="promedio">Cargando...</span></p>
-  <p><strong>Mínimo:</strong> <span id="minimo">Cargando...</span></p>
-  <p><strong>Máximo:</strong> <span id="maximo">Cargando...</span></p>
+    <div class="dashboard-container">
+
+        <div class="stat-card">
+            <h2>Máxima del Día</h2>
+            <div class="value" id="max-humedad">--</div>
+            <div class="label">%</div>
+        </div>
+
+        <div class="stat-card">
+            <h2>Mínima del Día</h2>
+            <div class="value" id="min-humedad">--</div>
+            <div class="label">%</div>
+        </div>
+
+        <div class="stat-card">
+            <h2>Promedio del Día</h2>
+            <div class="value" id="avg-humedad">--</div>
+            <div class="label">%</div>
+        </div>
+
+        <!-- Aquí agregaremos más tarjetas luego -->
+
+    </div>
+
+    <script>
+        function cargarEstadisticas() {
+            axios.get("{% url 'api_estadisticas_humedad' %}")
+                .then(response => {
+                    const { maximo, minimo, promedio } = response.data;
+                    document.getElementById('max-humedad').textContent = maximo?.toFixed(1) ?? '--';
+                    document.getElementById('min-humedad').textContent = minimo?.toFixed(1) ?? '--';
+                    document.getElementById('avg-humedad').textContent = promedio?.toFixed(1) ?? '--';
+                })
+                .catch(error => {
+                    console.error("Error al cargar estadísticas:", error);
+                });
+        }
+
+        cargarEstadisticas();
+        setInterval(cargarEstadisticas, 5000);
+    </script>
 </body>
 </html>

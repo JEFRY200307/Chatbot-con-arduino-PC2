@@ -9,6 +9,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from .models import RegistroHumedad
 from django.db.models import Avg, Max, Min
+from django.utils.timezone import now
 
 
 def generar_grafico_humedad_en_memoria():
@@ -96,3 +97,22 @@ def estadisticas_humedad(request):
 def pagina_estadisticas(request):
     return render(request, 'dashboard/estadisticas.html')
 #------------------------------------------------------
+
+def dashboard_estadisticas(request):
+    if request.is_ajax() or request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # Obtener estadísticas del día actual
+        hoy = now().date()
+        stats = RegistroHumedad.objects.filter(fecha__date=hoy).aggregate(
+            maximo=Max('humedad'),
+            minimo=Min('humedad'),
+            promedio=Avg('humedad'),
+        )
+        # Respuesta JSON para fetch
+        return JsonResponse({
+            'maximo': stats['maximo'] or 0,
+            'minimo': stats['minimo'] or 0,
+            'promedio': float(stats['promedio'] or 0),
+        })
+    else:
+        # Renderiza plantilla HTML
+        return render(request, 'dashboard/estadisticas.html')
