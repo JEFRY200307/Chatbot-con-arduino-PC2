@@ -3,3 +3,13 @@ __pycache__/
 /*.pyc
 .DS_Store
 *.log
+*.sqlite3
+*.db
+*.egg-info
+*.egg
+*.pyo
+*.pyd
+*.coverage
+.env
+*.env
+*.local

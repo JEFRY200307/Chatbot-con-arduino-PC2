@@ -1,20 +1,17 @@
-import pandas as pd
+import csv
+import os
 
-class GuardadorCSV:
-    """
-    Acumula lecturas de humedad con timestamp
-    y las guarda en un archivo CSV al finalizar.
-    """    
-    def __init__(self, archivo='humedad_datos.csv'):
-        self.datos = []
-        self.archivo = archivo
+CSV_FILE = 'humedad_datos.csv'
 
-    def agregar(self, tiempo, humedad):
-        #Añade un registro con la hora y humedad al buffer.
-        self.datos.append({'tiempo': tiempo, 'humedad': humedad})
+def init_csv():
+    """Crea el CSV con cabecera si aún no existe."""
+    if not os.path.exists(CSV_FILE):
+        with open(CSV_FILE, 'w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow(['timestamp', 'raw', 'humidity_pct'])
 
-    def guardar(self):
-        #Convierte la lista de registros a DataFrame y exporta a CSV.
-        df = pd.DataFrame(self.datos)
-        df.to_csv(self.archivo, index=False)
-        print(f"\n✅ Datos guardados en '{self.archivo}'")
+def append_csv(timestamp, raw, pct):
+    """Agrega una fila al CSV."""
+    with open(CSV_FILE, 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow([timestamp, raw, pct])
