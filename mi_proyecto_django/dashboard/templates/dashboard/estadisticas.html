@@ -6,6 +6,25 @@
     <title>Dashboard de Humedad</title>
     <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .btn-toggle {
+            padding: 0.75rem 1.5rem;
+            margin: 0.5rem;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+        .btn-toggle.active, .btn-toggle:hover {
+            background-color: #0056b3;
+        }
+        .content-section {
+            margin-top: 2rem;
+        }
+    </style>
 </head>
 <body>
     <div class="dashboard-container">
@@ -34,8 +53,24 @@
             <div class="label">%</div>
         </div>
 
-        <!-- Aquí agregaremos más tarjetas luego -->
+        <!-- Botones -->
+        <div style="text-align:center;">
+            <button id="btnGrafico" class="btn-toggle active">Gráfico</button>
+            <button id="btnData" class="btn-toggle">Data Histórica</button>
+        </div>
 
+        <!-- Contenido dinámico -->
+        <div class="content-section">
+            <div id="graficoContent">
+                <h2>Gráfico de Humedad</h2>
+                <p>Aquí se mostrará el gráfico (pendiente)</p>
+            </div>
+
+            <div id="dataContent" style="display:none;">
+                <h2>Data Histórica de Humedad</h2>
+                <p>Aquí se mostrará la data histórica (pendiente)</p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -55,6 +90,26 @@
 
         cargarEstadisticas();
         setInterval(cargarEstadisticas, 5000);
+
+        // Lógica para mostrar secciones
+        const btnGrafico = document.getElementById('btnGrafico');
+        const btnData = document.getElementById('btnData');
+        const graficoContent = document.getElementById('graficoContent');
+        const dataContent = document.getElementById('dataContent');
+
+        btnGrafico.addEventListener('click', () => {
+            btnGrafico.classList.add('active');
+            btnData.classList.remove('active');
+            graficoContent.style.display = 'block';
+            dataContent.style.display = 'none';
+        });
+
+        btnData.addEventListener('click', () => {
+            btnData.classList.add('active');
+            btnGrafico.classList.remove('active');
+            graficoContent.style.display = 'none';
+            dataContent.style.display = 'block';
+        });
     </script>
 </body>
 </html>

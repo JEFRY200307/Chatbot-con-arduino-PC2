@@ -100,6 +100,7 @@ def estadisticas_humedad(request):
 
 def pagina_estadisticas(request):
     return render(request, 'dashboard/estadisticas.html')
+
 #------------------------------------------------------
 
 
