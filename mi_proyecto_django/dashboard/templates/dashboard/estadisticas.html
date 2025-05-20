@@ -28,6 +28,12 @@
             <div class="label">%</div>
         </div>
 
+        <div class="stat-card">
+            <h2>Valor Actual</h2>
+            <div class="value" id="valor-actual">--</div>
+            <div class="label">%</div>
+        </div>
+
         <!-- Aquí agregaremos más tarjetas luego -->
 
     </div>
@@ -36,10 +42,11 @@
         function cargarEstadisticas() {
             axios.get("{% url 'api_estadisticas_humedad' %}")
                 .then(response => {
-                    const { maximo, minimo, promedio } = response.data;
+                    const { maximo, minimo, promedio, actual } = response.data;
                     document.getElementById('max-humedad').textContent = maximo?.toFixed(1) ?? '--';
                     document.getElementById('min-humedad').textContent = minimo?.toFixed(1) ?? '--';
                     document.getElementById('avg-humedad').textContent = promedio?.toFixed(1) ?? '--';
+                    document.getElementById('valor-actual').textContent = actual?.toFixed(1) ?? '--';
                 })
                 .catch(error => {
                     console.error("Error al cargar estadísticas:", error);
