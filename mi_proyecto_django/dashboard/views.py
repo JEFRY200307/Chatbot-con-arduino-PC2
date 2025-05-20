@@ -92,11 +92,17 @@ def estadisticas_humedad(request):
         minimo=Min('humedad'),
         maximo=Max('humedad'),
     )
+    ultimo = datos.order_by('-timestamp').first()
+    actual = ultimo.humedad if ultimo else 0
+    estadisticas['actual'] = actual
     return JsonResponse(estadisticas)
+
 
 def pagina_estadisticas(request):
     return render(request, 'dashboard/estadisticas.html')
+
 #------------------------------------------------------
+
 
 def dashboard_estadisticas(request):
     if request.is_ajax() or request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -104,8 +110,8 @@ def dashboard_estadisticas(request):
         hoy = now().date()
         stats = RegistroHumedad.objects.filter(fecha__date=hoy).aggregate(
             maximo=Max('humedad'),
-            minimo=Min('humedad'),
-            promedio=Avg('humedad'),
+           minimo=Min('humedad'),
+           promedio=Avg('humedad'),
         )
         # Respuesta JSON para fetch
         return JsonResponse({
