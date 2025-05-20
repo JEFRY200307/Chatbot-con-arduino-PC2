@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Humedad en Tiempo Real</title>
+  <script>
+    async function actualizarEstadisticas() {
+      const res = await fetch("/dashboard/api/estadisticas/");
+      const data = await res.json();
+      document.getElementById("promedio").innerText = data.promedio.toFixed(2) + " %";
+      document.getElementById("minimo").innerText = data.minimo + " %";
+      document.getElementById("maximo").innerText = data.maximo + " %";
+    }
+
+    setInterval(actualizarEstadisticas, 3000); // cada 3 segundos
+    window.onload = actualizarEstadisticas;
+  </script>
+</head>
+<body>
+  <h1>Estadísticas de Humedad</h1>
+  <p><strong>Promedio:</strong> <span id="promedio">Cargando...</span></p>
+  <p><strong>Mínimo:</strong> <span id="minimo">Cargando...</span></p>
+  <p><strong>Máximo:</strong> <span id="maximo">Cargando...</span></p>
+</body>
+</html>

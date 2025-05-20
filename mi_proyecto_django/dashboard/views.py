@@ -6,6 +6,10 @@ import seaborn as sns
 from django.conf import settings
 import os
 from django.shortcuts import render
+from django.http import JsonResponse
+from .models import RegistroHumedad
+from django.db.models import Avg, Max, Min
+
 
 def generar_grafico_humedad_en_memoria():
     ruta_csv = os.path.join(settings.BASE_DIR, 'humedad_datos.csv')
@@ -78,3 +82,17 @@ def grafico_clasificacion_humedad(request):
 def dashboard_view(request):
     return render(request, 'dashboard/dashboard.html')
 
+
+#----------------------------------------------------------------------
+def estadisticas_humedad(request):
+    datos = RegistroHumedad.objects.all()
+    estadisticas = datos.aggregate(
+        promedio=Avg('humedad'),
+        minimo=Min('humedad'),
+        maximo=Max('humedad'),
+    )
+    return JsonResponse(estadisticas)
+
+def pagina_estadisticas(request):
+    return render(request, 'dashboard/estadisticas.html')
+#------------------------------------------------------
