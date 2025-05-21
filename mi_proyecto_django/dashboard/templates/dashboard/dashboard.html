@@ -1,13 +1,179 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Dashboard</title>
+    <meta charset="UTF-8">
+    <title>Dashboard de Humedad</title>
+    <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        /* Mantén tu CSS existente aquí */
+        #semaforo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+
+        .indicador-extra {
+            display: inline-block;
+            margin: 10px 20px 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            background: #f5f5f5;
+            font-size: 1.1em;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Bienvenido al Dashboard</h1>
-    <p>Este es un ejemplo básico de plantilla para el dashboard.</p>
-    <img src="{% url 'grafico_humedad' %}" alt="Gráfico de Humedad" />ad" /> alt="Gráfico de Humedad" />
+    <div class="dashboard-container">
+
+        <div class="stat-card">
+            <h2>Máxima del Día</h2>
+            <div class="value" id="max-humedad">--</div>
+            <div class="label">%</div>
+        </div>
+
+        <div class="stat-card">
+            <h2>Mínima del Día</h2>
+            <div class="value" id="min-humedad">--</div>
+            <div class="label">%</div>
+        </div>
+
+        <div class="stat-card">
+            <h2>Promedio del Día</h2>
+            <div class="value" id="avg-humedad">--</div>
+            <div class="label">%</div>
+        </div>
+
+        <div class="stat-card">
+            <h2>Valor Actual</h2>
+            <div class="value" id="valor-actual">--</div>
+            <div class="label">%</div>
+        </div>
+
+        <!-- Indicadores extra -->
+        <div class="indicador-extra">
+            <b>Estado Sensor:</b> <span id="estado_sensor">--</span>
+        </div>
+        <div class="indicador-extra">
+            <b>Semáforo:</b> <span id="semaforo"></span>
+        </div>
+        <div class="indicador-extra">
+            <b>Tiempo desde último crítico:</b> <span id="tiempo_critico">--</span> s
+        </div>
+
+        <!-- Botones -->
+        <div style="text-align:center;">
+            <button id="btnGrafico" class="btn-toggle active">Gráfico</button>
+            <button id="btnData" class="btn-toggle">Data Histórica</button>
+        </div>
+
+        <!-- Contenido dinámico -->
+        <div class="content-section">
+            <div id="graficoContent" style="width: 100%; margin-top: 30px;">
+                <h2>Gráfico de Humedad</h2>
+                <canvas id="graficoEvolucion" style="width:100%;max-width:1200px;height:350px;"></canvas>
+            </div>
+
+            <div id="dataContent" style="display:none;">
+                <h2>Data Histórica de Humedad</h2>
+                <div id="historial"></div>
+                <button onclick="mostrarHistorial()">Buscar por fecha</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Estadísticas e indicadores
+        function cargarEstadisticas() {
+            axios.get("{% url 'estadisticas_humedad' %}")
+                .then(response => {
+                    const { maximo, minimo, promedio, actual } = response.data;
+                    document.getElementById('max-humedad').textContent = maximo?.toFixed(1) ?? '--';
+                    document.getElementById('min-humedad').textContent = minimo?.toFixed(1) ?? '--';
+                    document.getElementById('avg-humedad').textContent = promedio?.toFixed(1) ?? '--';
+                    document.getElementById('valor-actual').textContent = actual?.toFixed(1) ?? '--';
+                    actualizarSemaforo(actual ?? 0);
+                })
+                .catch(error => {
+                    console.error("Error al cargar estadísticas:", error);
+                });
+            axios.get("{% url 'estado_sensor' %}")
+                .then(response => {
+                    document.getElementById('estado_sensor').textContent = response.data.conectado ? "Conectado" : "Desconectado";
+                });
+            axios.get("{% url 'tiempo_desde_ultimo_critico' %}")
+                .then(response => {
+                    document.getElementById('tiempo_critico').textContent = response.data.segundos_desde_critico ?? '--';
+                });
+        }
+
+        function actualizarSemaforo(valor) {
+            let color = "green";
+            if (valor > 80) color = "red";
+            else if (valor > 60) color = "yellow";
+            document.getElementById("semaforo").style.background = color;
+        }
+
+        // Gráfico de evolución
+        let ctx = document.getElementById('graficoEvolucion').getContext('2d');
+        let chart = new Chart(ctx, {
+            type: 'line',
+            data: { labels: [], datasets: [{ label: 'Humedad (%)', data: [], borderColor: 'blue', fill: false }] }
+        });
+        function actualizarGrafico() {
+            axios.get("{% url 'humedad_evolucion_json' %}")
+                .then(response => {
+                    const data = response.data;
+                    chart.data.labels = data.map(d => d.timestamp);
+                    chart.data.datasets[0].data = data.map(d => d.humedad);
+                    chart.update();
+                });
+        }
+
+        // Historial
+        function mostrarHistorial() {
+            let fecha = prompt("Ingrese fecha (YYYY-MM-DD):");
+            if (!fecha) return;
+            axios.get("{% url 'historial_por_dia' %}?fecha=" + fecha)
+                .then(response => {
+                    document.getElementById('historial').innerHTML = response.data;
+                    document.getElementById('dataContent').style.display = 'block';
+                });
+        }
+
+        // Inicialización y actualización periódica
+        cargarEstadisticas();
+        actualizarGrafico();
+        setInterval(cargarEstadisticas, 5000);
+        setInterval(actualizarGrafico, 5000);
+
+        // Lógica para mostrar secciones
+        const btnGrafico = document.getElementById('btnGrafico');
+        const btnData = document.getElementById('btnData');
+        const graficoContent = document.getElementById('graficoContent');
+        const dataContent = document.getElementById('dataContent');
+
+        btnGrafico.addEventListener('click', () => {
+            btnGrafico.classList.add('active');
+            btnData.classList.remove('active');
+            graficoContent.style.display = 'block';
+            dataContent.style.display = 'none';
+        });
+
+        btnData.addEventListener('click', () => {
+            btnData.classList.add('active');
+            btnGrafico.classList.remove('active');
+            graficoContent.style.display = 'none';
+            dataContent.style.display = 'block';
+        });
+    </script>
 </body>
+
 </html>

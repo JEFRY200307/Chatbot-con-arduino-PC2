@@ -2,11 +2,11 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Dashboard principal
     path('', views.dashboard_view, name='dashboard'),
-    path('grafico/', views.grafico_humedad, name='grafico_humedad'),
-    path('grafico_clasificacion/', views.grafico_clasificacion_humedad, name='grafico_clasificacion_humedad'),
-    path('api/estadisticas/', views.estadisticas_humedad, name='api_estadisticas_humedad'), #benjamin
-    path('estadisticas/', views.pagina_estadisticas, name='pagina_estadisticas'),#benjamin
-    path('dashboard_estadisticas/', views.dashboard_estadisticas, name='estadisticas_humedad'), 
-
+    path('humedad-evolucion-json/', views.humedad_evolucion_json, name='humedad_evolucion_json'),
+    path('estadisticas-humedad/', views.estadisticas_humedad, name='estadisticas_humedad'),
+    path('estado-sensor/', views.estado_sensor, name='estado_sensor'),
+    path('tiempo-ultimo-critico/', views.tiempo_desde_ultimo_critico, name='tiempo_desde_ultimo_critico'),
+    path('historial/', views.historial_por_dia, name='historial_por_dia'),
 ]
