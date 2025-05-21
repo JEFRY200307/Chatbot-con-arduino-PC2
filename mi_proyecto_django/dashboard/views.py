@@ -86,7 +86,10 @@ def dashboard_view(request):
 
 #----------------------------------------------------------------------
 def estadisticas_humedad(request):
-    datos = RegistroHumedad.objects.all()
+    hoy =now().date()
+
+    datos = RegistroHumedad.objects.filter(timestamp__date=hoy)
+
     estadisticas = datos.aggregate(
         promedio=Avg('humedad'),
         minimo=Min('humedad'),
