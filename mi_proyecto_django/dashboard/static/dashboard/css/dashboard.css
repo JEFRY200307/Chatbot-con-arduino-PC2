@@ -109,3 +109,54 @@
 .content-section {
   width: 100%;
 }
+
+/* Ajusta el contenedor del semáforo para que todo quede en columna */
+.indicador-extra {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* o center si prefieres centrado */
+  margin: 10px 20px 10px 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f5f5f5;
+  font-size: 1.1em;
+}
+
+/* El círculo del semáforo */
+#semaforo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: block;
+  margin: 0 auto 6px auto; /* centrado y espacio abajo */
+  border: 2px solid #888;
+  box-shadow: 0 0 8px #ccc;
+  transition: background 0.3s;
+}
+
+/* El texto del estado debajo del semáforo */
+#semaforo-texto {
+  display: block;
+  margin: 0 auto 8px auto;
+  font-weight: bold;
+  font-size: 1.05em;
+  color: #333;
+  text-align: center;
+}
+
+/* Leyenda del semáforo */
+.leyenda-semaforo {
+  margin-left: 0;
+  margin-top: 8px;
+  font-size: 0.9em;
+}
+
+.leyenda-semaforo span {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid #888;
+  vertical-align: middle;
+  margin-right: 6px;
+}
