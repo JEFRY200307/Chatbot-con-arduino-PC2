@@ -28,15 +28,19 @@ def estado_sensor(request):
 #----------------------------------------------------------------------
 # Devuelve el tiempo (en segundos) desde el último registro crítico (humedad > 70%)
 def tiempo_desde_ultimo_critico(request):
-    ultimo = RegistroHumedad.objects.filter(humedad__gt=60).order_by('-timestamp').first()
+    # Considerar humedad crítica > 70%, ya que eso indica tu comentario
+    ultimo = RegistroHumedad.objects.filter(humedad__gt=70).order_by('-timestamp').first()
     if ultimo:
         ahora = timezone.now()
         delta = ahora - ultimo.timestamp
-        segundos = int(delta.total_seconds())
-    else:
-        segundos = None
-    return JsonResponse({'segundos_desde_critico': segundos})
+        total_segundos = int(delta.total_seconds())
 
+        # Convertir a formato HH:MM:SS
+        tiempo_formateado = str(timedelta(seconds=total_segundos))
+    else:
+        tiempo_formateado = None
+
+    return JsonResponse({'tiempo_desde_critico': tiempo_formateado})
 #----------------------------------------------------------------------
 # Devuelve el historial de humedad por día (para el botón de historial)
 def historial_por_dia(request):
