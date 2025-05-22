@@ -49,22 +49,23 @@
             </div>
         </div>
 
-        <!-- Tercera fila: navegación gráfica/datos -->
+        <!-- Tercera fila: navegación gráfica/datos/chatbot -->
         <div class="controls-row">
             <button id="btnGrafico" class="btn-toggle active">Gráfico</button>
             <button id="btnData" class="btn-toggle">Data Histórica</button>
+            <button id="btnChatbot" class="btn-toggle">Chatbot</button>
         </div>
 
         <!-- Contenido dinámico -->
         <div class="content-section">
+            <!-- Sección para el gráfico -->
             <div id="graficoContent">
                 <h2>Gráfico de Humedad</h2>
                 <canvas id="graficoEvolucion"></canvas>
             </div>
+            <!-- Sección para la data histórica con formulario -->
             <div id="dataContent" class="hidden">
                 <h2>Data Histórica de Humedad</h2>
-                <!-- ...tu HTML arriba... -->
-
                 <form id="historialForm" style="margin-bottom: 15px;">
                     <label>Fecha: <input type="date" name="fecha"></label>
                     <label>Mes: <input type="month" name="mes"></label>
@@ -75,221 +76,364 @@
                     <button type="button" id="btnDescargarCSV" class="btn-historial" disabled>Descargar en CSV</button>
                 </form>
                 <div id="historial"></div>
-
-                <!-- Al final del archivo, antes de </body>: -->
-                <script>
-                    document.addEventListener('DOMContentLoaded', function () {
-                        const form = document.getElementById('historialForm');
-                        const inputs = {
-                            fecha: form.elements['fecha'],
-                            mes: form.elements['mes'],
-                            anio: form.elements['anio'],
-                            fecha_inicio: form.elements['fecha_inicio'],
-                            fecha_fin: form.elements['fecha_fin']
-                        };
-
-                        function resetOthers(except) {
-                            for (const key in inputs) {
-                                if (key !== except) {
-                                    inputs[key].value = '';
-                                    inputs[key].disabled = except !== null;
-                                }
-                            }
-                            if (!except) {
-                                for (const key in inputs) {
-                                    inputs[key].disabled = false;
-                                }
-                            }
-                        }
-
-                        inputs.fecha.addEventListener('input', function () {
-                            resetOthers(this.value ? 'fecha' : null);
-                        });
-                        inputs.mes.addEventListener('input', function () {
-                            resetOthers(this.value ? 'mes' : null);
-                        });
-                        inputs.anio.addEventListener('input', function () {
-                            resetOthers(this.value ? 'anio' : null);
-                        });
-                        inputs.fecha_inicio.addEventListener('input', function () {
-                            if (inputs.fecha_inicio.value || inputs.fecha_fin.value) {
-                                resetOthers('fecha_inicio');
-                                inputs.fecha_fin.disabled = false;
-                            } else {
-                                resetOthers(null);
-                            }
-                        });
-                        inputs.fecha_fin.addEventListener('input', function () {
-                            if (inputs.fecha_inicio.value || inputs.fecha_fin.value) {
-                                resetOthers('fecha_inicio');
-                                inputs.fecha_inicio.disabled = false;
-                            } else {
-                                resetOthers(null);
-                            }
-                        });
-
-                        // Submit del formulario
-                        let ultimaBusqueda = '';
-                        form.addEventListener('submit', function (e) {
-                            e.preventDefault();
-                            let params = [];
-                            if (form.fecha.value) {
-                                params.push('fecha=' + form.fecha.value);
-                            } else if (form.mes.value) {
-                                params.push('mes=' + form.mes.value);
-                            } else if (form.anio.value) {
-                                params.push('anio=' + form.anio.value);
-                            } else if (form.fecha_inicio.value && form.fecha_fin.value) {
-                                params.push('fecha_inicio=' + form.fecha_inicio.value);
-                                params.push('fecha_fin=' + form.fecha_fin.value);
-                            }
-                            ultimaBusqueda = params.join('&');
-                            document.getElementById('btnDescargarCSV').disabled = !ultimaBusqueda;
-                            const url = `{% url 'historial_completo' %}` + (params.length ? '?' + params.join('&') : '');
-                            // ...código previo...
-                            axios.get(url)
-                                .then(response => {
-                                    document.getElementById('historial').innerHTML = response.data;
-                                    // Espera a que el DOM del fragmento esté listo
-                                    setTimeout(() => {
-                                        // Intenta dibujar el gráfico si existe el canvas y los datos
-                                        const graficoScript = document.getElementById('grafico-historial');
-                                        const canvas = document.getElementById('graficoHistorial');
-                                        if (graficoScript && canvas) {
-                                            const grafico = JSON.parse(graficoScript.textContent);
-                                            if (grafico.length > 0) {
-                                                const labelList = grafico.map(d => d.timestamp);
-                                                const dataList = grafico.map(d => d.humedad);
-                                                const ctxHist = canvas.getContext('2d');
-                                                new Chart(ctxHist, {
-                                                    type: 'line',
-                                                    data: {
-                                                        labels: labelList,
-                                                        datasets: [{
-                                                            label: 'Humedad (%)',
-                                                            data: dataList,
-                                                            borderColor: 'blue',
-                                                            backgroundColor: 'rgba(0,0,255,0.1)',
-                                                            fill: false,
-                                                            tension: 0.2,
-                                                            pointRadius: 2
-                                                        }]
-                                                    },
-                                                    options: {
-                                                        responsive: true,
-                                                        plugins: {
-                                                            legend: { display: true }
-                                                        },
-                                                        scales: {
-                                                            x: { display: true, title: { display: true, text: 'Fecha y Hora' } },
-                                                            y: { display: true, title: { display: true, text: 'Humedad (%)' } }
-                                                        }
-                                                    }
-                                                });
-                                            } else {
-                                                canvas.style.display = 'none';
-                                                const msg = document.createElement('p');
-                                                msg.textContent = 'No hay datos para graficar en este periodo.';
-                                                msg.style.color = 'red';
-                                                msg.style.fontWeight = 'bold';
-                                                canvas.parentNode.appendChild(msg);
-                                            }
-                                        }
-                                    }, 0);
-                                });
-                            // ...código posterior...
-                        });
-
-                        document.getElementById('btnDescargarCSV').addEventListener('click', function () {
-                            if (!ultimaBusqueda) return;
-                            const url = `{% url 'descargar_historial_csv' %}` + (ultimaBusqueda ? '?' + ultimaBusqueda : '');
-                            window.location.href = url;
-                        });
-                    });
-                </script>
+                <!-- Aquí se insertará el JSON para graficar si lo hay -->
+                {{ grafico|json_script:"grafico-historial" }}
+            </div>
+            <!-- Sección del Chatbot tipo WhatsApp -->
+            <div id="chatbotContent" class="hidden">
+                <h2 style="text-align:center; margin-bottom: 10px;">Asistente de Humedad</h2>
+                <div id="chatbox" class="chatbox-wsp">
+                    <!-- Mensajes aparecerán aquí -->
+                </div>
+                <div class="chat-input-row">
+                    <input id="chatInput" type="text" placeholder="Escribe tu mensaje...">
+                    <button id="chatSend"><span>Enviar</span></button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        // Estadísticas e indicadores
-        function cargarEstadisticas() {
-            axios.get("{% url 'estadisticas_humedad' %}")
-                .then(response => {
-                    const { maximo, minimo, promedio, actual } = response.data;
-                    document.getElementById('max-humedad').textContent = maximo?.toFixed(1) ?? '--';
-                    document.getElementById('min-humedad').textContent = minimo?.toFixed(1) ?? '--';
-                    document.getElementById('avg-humedad').textContent = promedio?.toFixed(1) ?? '--';
-                    document.getElementById('valor-actual').textContent = actual?.toFixed(1) ?? '--';
-                    actualizarSemaforo(actual ?? 0);
-                })
-                .catch(error => console.error("Error al cargar estadísticas:", error));
+        <script>
+            // Estadísticas e indicadores
+            function cargarEstadisticas() {
+                axios.get("{% url 'estadisticas_humedad' %}")
+                    .then(response => {
+                        const { maximo, minimo, promedio, actual } = response.data;
+                        document.getElementById('max-humedad').textContent = maximo?.toFixed(1) ?? '--';
+                        document.getElementById('min-humedad').textContent = minimo?.toFixed(1) ?? '--';
+                        document.getElementById('avg-humedad').textContent = promedio?.toFixed(1) ?? '--';
+                        document.getElementById('valor-actual').textContent = actual?.toFixed(1) ?? '--';
+                        actualizarSemaforo(actual ?? 0);
+                    })
+                    .catch(error => console.error("Error al cargar estadísticas:", error));
 
-            axios.get("{% url 'estado_sensor' %}")
-                .then(response => {
-                    document.getElementById('estado_sensor').textContent = response.data.conectado ? "Conectado" : "Desconectado";
+                axios.get("{% url 'estado_sensor' %}")
+                    .then(response => {
+                        document.getElementById('estado_sensor').textContent = response.data.conectado ? "Conectado" : "Desconectado";
+                    });
+
+                axios.get("{% url 'tiempo_desde_ultimo_critico' %}")
+                    .then(response => {
+                        const tiempoStr = response.data.tiempo_desde_critico;
+                        if (!tiempoStr) {
+                            document.getElementById('tiempo_critico').textContent = '--';
+                            return;
+                        }
+                        const [horas, minutos, segundos] = tiempoStr.split(':').map(Number);
+                        let texto = '';
+                        if (horas > 0) texto += `${horas}h `;
+                        if (minutos > 0 || horas > 0) texto += `${minutos}min `;
+                        texto += `${segundos}s`;
+                        document.getElementById('tiempo_critico').textContent = texto;
+                    });
+            }
+
+            function actualizarSemaforo(valor) {
+                let color = "green";
+                if (valor > 80) color = "red";
+                else if (valor > 60) color = "yellow";
+                document.getElementById("semaforo").style.background = color;
+            }
+
+            // Gráfico de evolución
+            const ctx = document.getElementById('graficoEvolucion').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [{ label: 'Humedad (%)', data: [], borderColor: 'blue', fill: false }] }
+            });
+            function actualizarGrafico() {
+                axios.get("{% url 'humedad_evolucion_json' %}")
+                    .then(response => {
+                        const data = response.data;
+                        chart.data.labels = data.map(d => d.timestamp);
+                        chart.data.datasets[0].data = data.map(d => d.humedad);
+                        chart.update();
+                    });
+            }
+
+            // Lógica para la sección de Data Histórica
+            document.addEventListener('DOMContentLoaded', function () {
+                const form = document.getElementById('historialForm');
+                const inputs = {
+                    fecha: form.elements['fecha'],
+                    mes: form.elements['mes'],
+                    anio: form.elements['anio'],
+                    fecha_inicio: form.elements['fecha_inicio'],
+                    fecha_fin: form.elements['fecha_fin']
+                };
+
+                function resetOthers(except) {
+                    for (const key in inputs) {
+                        if (key !== except) {
+                            inputs[key].value = '';
+                            inputs[key].disabled = except !== null;
+                        }
+                    }
+                    if (!except) {
+                        for (const key in inputs) {
+                            inputs[key].disabled = false;
+                        }
+                    }
+                }
+
+                inputs.fecha.addEventListener('input', function () {
+                    resetOthers(this.value ? 'fecha' : null);
+                });
+                inputs.mes.addEventListener('input', function () {
+                    resetOthers(this.value ? 'mes' : null);
+                });
+                inputs.anio.addEventListener('input', function () {
+                    resetOthers(this.value ? 'anio' : null);
+                });
+                inputs.fecha_inicio.addEventListener('input', function () {
+                    if (inputs.fecha_inicio.value || inputs.fecha_fin.value) {
+                        resetOthers('fecha_inicio');
+                        inputs.fecha_fin.disabled = false;
+                    } else {
+                        resetOthers(null);
+                    }
+                });
+                inputs.fecha_fin.addEventListener('input', function () {
+                    if (inputs.fecha_inicio.value || inputs.fecha_fin.value) {
+                        resetOthers('fecha_inicio');
+                        inputs.fecha_inicio.disabled = false;
+                    } else {
+                        resetOthers(null);
+                    }
                 });
 
-            axios.get("{% url 'tiempo_desde_ultimo_critico' %}")
-            .then(response => {
-                const tiempoStr = response.data.tiempo_desde_critico;
-                if (tiempoStr == null) {
-                    document.getElementById('tiempo_critico').textContent = '--';
-                    return;
-                }
-                const [horas, minutos, segundos] = tiempoStr.split(':').map(Number);
-                let texto = '';
-                if (horas > 0) texto += `${horas}h `;
-                if (minutos > 0 || horas > 0) texto += `${minutos}min `;
-                texto += `${segundos}s`;
-                document.getElementById('tiempo_critico').textContent = texto;
+                // Submit del formulario para obtener el historial
+                let ultimaBusqueda = '';
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    let params = [];
+                    if (form.fecha.value) {
+                        params.push('fecha=' + form.fecha.value);
+                    } else if (form.mes.value) {
+                        params.push('mes=' + form.mes.value);
+                    } else if (form.anio.value) {
+                        params.push('anio=' + form.anio.value);
+                    } else if (form.fecha_inicio.value && form.fecha_fin.value) {
+                        params.push('fecha_inicio=' + form.fecha_inicio.value);
+                        params.push('fecha_fin=' + form.fecha_fin.value);
+                    }
+                    ultimaBusqueda = params.join('&');
+                    document.getElementById('btnDescargarCSV').disabled = !ultimaBusqueda;
+                    const url = `{% url 'historial_completo' %}` + (params.length ? '?' + params.join('&') : '');
+                    axios.get(url)
+                        .then(response => {
+                            document.getElementById('historial').innerHTML = response.data;
+                            // Espera a que el DOM del fragmento esté listo para graficar
+                            setTimeout(() => {
+                                const graficoScript = document.getElementById('grafico-historial');
+                                const canvas = document.getElementById('graficoHistorial');
+                                if (graficoScript && canvas) {
+                                    const grafico = JSON.parse(graficoScript.textContent);
+                                    if (grafico.length > 0) {
+                                        const labelList = grafico.map(d => d.timestamp);
+                                        const dataList = grafico.map(d => d.humedad);
+                                        const ctxHist = canvas.getContext('2d');
+                                        new Chart(ctxHist, {
+                                            type: 'line',
+                                            data: {
+                                                labels: labelList,
+                                                datasets: [{
+                                                    label: 'Humedad (%)',
+                                                    data: dataList,
+                                                    borderColor: 'blue',
+                                                    backgroundColor: 'rgba(0,0,255,0.1)',
+                                                    fill: false,
+                                                    tension: 0.2,
+                                                    pointRadius: 2
+                                                }]
+                                            },
+                                            options: {
+                                                responsive: true,
+                                                plugins: { legend: { display: true } },
+                                                scales: {
+                                                    x: { display: true, title: { display: true, text: 'Fecha y Hora' } },
+                                                    y: { display: true, title: { display: true, text: 'Humedad (%)' } }
+                                                }
+                                            }
+                                        });
+                                    } else {
+                                        canvas.style.display = 'none';
+                                        const msg = document.createElement('p');
+                                        msg.textContent = 'No hay datos para graficar en este periodo.';
+                                        msg.style.color = 'red';
+                                        msg.style.fontWeight = 'bold';
+                                        canvas.parentNode.appendChild(msg);
+                                    }
+                                }
+                            }, 0);
+                        });
+                });
+
+                document.getElementById('btnDescargarCSV').addEventListener('click', function () {
+                    if (!ultimaBusqueda) return;
+                    const url = `{% url 'descargar_historial_csv' %}` + (ultimaBusqueda ? '?' + ultimaBusqueda : '');
+                    window.location.href = url;
+                });
             });
 
+            // Funciones iniciales: estadísticas y gráficos
+            cargarEstadisticas();
+            actualizarGrafico();
+            setInterval(cargarEstadisticas, 5000);
+            setInterval(actualizarGrafico, 5000);
 
-        }
+            // Lógica de botones de navegación
+            document.getElementById('btnGrafico').addEventListener('click', () => {
+                document.getElementById('btnGrafico').classList.add('active');
+                document.getElementById('btnData').classList.remove('active');
+                document.getElementById('btnChatbot').classList.remove('active');
+                document.getElementById('graficoContent').classList.remove('hidden');
+                document.getElementById('dataContent').classList.add('hidden');
+                document.getElementById('chatbotContent').classList.add('hidden');
+            });
+            document.getElementById('btnData').addEventListener('click', () => {
+                document.getElementById('btnData').classList.add('active');
+                document.getElementById('btnGrafico').classList.remove('active');
+                document.getElementById('btnChatbot').classList.remove('active');
+                document.getElementById('graficoContent').classList.add('hidden');
+                document.getElementById('dataContent').classList.remove('hidden');
+                document.getElementById('chatbotContent').classList.add('hidden');
+            });
+            document.getElementById('btnChatbot').addEventListener('click', () => {
+                document.getElementById('btnChatbot').classList.add('active');
+                document.getElementById('btnGrafico').classList.remove('active');
+                document.getElementById('btnData').classList.remove('active');
+                document.getElementById('graficoContent').classList.add('hidden');
+                document.getElementById('dataContent').classList.add('hidden');
+                document.getElementById('chatbotContent').classList.remove('hidden');
+            });
 
-        function actualizarSemaforo(valor) {
-            let color = "green";
-            if (valor > 80) color = "red";
-            else if (valor > 60) color = "yellow";
-            document.getElementById("semaforo").style.background = color;
-        }
+            // Funcionalidad del Chatbot
+            document.getElementById('chatSend').addEventListener('click', enviarMensaje);
+            document.getElementById('chatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') enviarMensaje();
+            });
 
-        // Gráfico de evolución
-        const ctx = document.getElementById('graficoEvolucion').getContext('2d');
-        const chart = new Chart(ctx, {
-            type: 'line',
-            data: { labels: [], datasets: [{ label: 'Humedad (%)', data: [], borderColor: 'blue', fill: false }] }
-        });
-        function actualizarGrafico() {
-            axios.get("{% url 'humedad_evolucion_json' %}")
-                .then(response => {
-                    const data = response.data;
-                    chart.data.labels = data.map(d => d.timestamp);
-                    chart.data.datasets[0].data = data.map(d => d.humedad);
-                    chart.update();
-                });
-        }
-        // Inicialización y actualización periódica
-        cargarEstadisticas();
-        actualizarGrafico();
-        setInterval(cargarEstadisticas, 5000);
-        setInterval(actualizarGrafico, 5000);
+            function enviarMensaje() {
+                const input = document.getElementById('chatInput');
+                const mensaje = input.value.trim();
+                if (!mensaje) return;
+                const chatbox = document.getElementById('chatbox');
+                // Mensaje usuario
+                chatbox.innerHTML += `<div class="msg-user">${mensaje}</div>`;
+                input.value = '';
+                chatbox.scrollTop = chatbox.scrollHeight;
+                // Mensaje bot (esperando respuesta)
+                const loadingId = 'bot-msg-' + Date.now();
+                chatbox.innerHTML += `<div class="msg-bot" id="${loadingId}"><div class="bot-avatar">🤖</div><span>Escribiendo...</span></div>`;
+                chatbox.scrollTop = chatbox.scrollHeight;
+                // Enviar mensaje al endpoint del chatbot
+                axios.post("{% url 'chatbot_api' %}", new URLSearchParams({ pregunta: mensaje }))
+                    .then(response => {
+                        const respuesta = response.data.respuesta;
+                        const botMsg = document.getElementById(loadingId);
+                        if (botMsg) botMsg.innerHTML = `<div class="bot-avatar">🤖</div><span>${respuesta}</span>`;
+                        chatbox.scrollTop = chatbox.scrollHeight;
+                    })
+                    .catch(error => {
+                        console.error("Error al enviar mensaje al chatbot:", error);
+                        const botMsg = document.getElementById(loadingId);
+                        if (botMsg) botMsg.innerHTML = `<div class="bot-avatar">🤖</div><span style="color:red;"><strong>Error:</strong> No se pudo obtener respuesta.</span>`;
+                        chatbox.scrollTop = chatbox.scrollHeight;
+                    });
+            }
+        </script>
 
-        // Lógica de botones
-        document.getElementById('btnGrafico').addEventListener('click', () => {
-            document.getElementById('btnGrafico').classList.add('active');
-            document.getElementById('btnData').classList.remove('active');
-            document.getElementById('graficoContent').classList.remove('hidden');
-            document.getElementById('dataContent').classList.add('hidden');
-        });
-        document.getElementById('btnData').addEventListener('click', () => {
-            document.getElementById('btnData').classList.add('active');
-            document.getElementById('btnGrafico').classList.remove('active');
-            document.getElementById('graficoContent').classList.add('hidden');
-            document.getElementById('dataContent').classList.remove('hidden');
-        });
-    </script>
+        <style>
+            .chatbox-wsp {
+                height: 320px;
+                overflow-y: auto;
+                background: #c7e1fe;
+                padding: 18px 10px 10px 10px;
+                border-radius: 12px;
+                margin-bottom: 12px;
+                border: 1px solid #d0d7de;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .msg-user {
+                align-self: flex-end;
+                background: #dcf8c6;
+                color: #222;
+                padding: 10px 16px;
+                border-radius: 16px 16px 4px 16px;
+                max-width: 75%;
+                font-size: 1em;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+                margin-bottom: 2px;
+                position: relative;
+            }
+            .msg-bot {
+                align-self: flex-start;
+                background: #fff;
+                color: #222;
+                padding: 10px 16px;
+                border-radius: 16px 16px 16px 4px;
+                max-width: 75%;
+                font-size: 1em;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+                margin-bottom: 2px;
+                position: relative;
+                display: flex;
+                align-items: flex-end;
+                gap: 8px;
+            }
+            .msg-bot .bot-avatar {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                background: #1976d2;
+                color: #fff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                font-size: 1.1em;
+                margin-right: 2px;
+                flex-shrink: 0;
+            }
+            .chat-input-row {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                padding: 0 2px;
+            }
+            #chatInput {
+                flex: 1;
+                padding: 12px;
+                border-radius: 20px;
+                border: 1px solid #d0d7de;
+                font-size: 1em;
+                outline: none;
+                background: #fff;
+                transition: border 0.2s;
+            }
+            #chatInput:focus {
+                border: 1.5px solid #1976d2;
+            }
+            #chatSend {
+                padding: 10px 20px;
+                border-radius: 20px;
+                background: #1976d2;
+                color: #fff;
+                border: none;
+                font-weight: bold;
+                cursor: pointer;
+                transition: background 0.2s;
+                font-size: 1em;
+                box-shadow: 0 1px 4px rgba(25,118,210,0.08);
+            }
+            #chatSend:hover {
+                background: #125ea7;
+            }
+        </style>
+    </div>
 
 </body>
 
