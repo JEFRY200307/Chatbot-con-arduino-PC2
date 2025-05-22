@@ -231,9 +231,21 @@
                 });
 
             axios.get("{% url 'tiempo_desde_ultimo_critico' %}")
-                .then(response => {
-                    document.getElementById('tiempo_critico').textContent = response.data.segundos_desde_critico ?? '--';
-                });
+            .then(response => {
+                const tiempoStr = response.data.tiempo_desde_critico;
+                if (tiempoStr == null) {
+                    document.getElementById('tiempo_critico').textContent = '--';
+                    return;
+                }
+                const [horas, minutos, segundos] = tiempoStr.split(':').map(Number);
+                let texto = '';
+                if (horas > 0) texto += `${horas}h `;
+                if (minutos > 0 || horas > 0) texto += `${minutos}min `;
+                texto += `${segundos}s`;
+                document.getElementById('tiempo_critico').textContent = texto;
+            });
+
+
         }
 
         function actualizarSemaforo(valor) {
