@@ -10,4 +10,5 @@ urlpatterns = [
     path('tiempo-ultimo-critico/', views.tiempo_desde_ultimo_critico, name='tiempo_desde_ultimo_critico'),
     path('historial/', views.historial_por_dia, name='historial_por_dia'),
     path('historial-completo/', views.historial_completo, name='historial_completo'),
+    path('descargar_historial_csv/', views.descargar_historial_csv, name='descargar_historial_csv'),
 ]
