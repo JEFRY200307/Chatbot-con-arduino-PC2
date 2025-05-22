@@ -159,3 +159,21 @@ def descargar_historial_csv(request):
     for d in datos:
         writer.writerow([d.timestamp, d.humedad])
     return response
+#----------------------------------------------------------------------
+# chatbot con OpenRouter
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .chatbot import responder_chatbot
+
+@csrf_exempt
+def chatbot_api(request):
+    if request.method == "POST":
+        pregunta = request.POST.get("pregunta")
+        respuesta = responder_chatbot(pregunta or "")
+        return JsonResponse({"respuesta": respuesta})
+    return JsonResponse({"error": "Solo POST permitido"}, status=400)
+
+def chatbot_page(request):
+    # Renderiza tu plantilla dashboard.html, que ya tiene el formulario de chat
+    return render(request, 'dashboard/dashboard.html')
