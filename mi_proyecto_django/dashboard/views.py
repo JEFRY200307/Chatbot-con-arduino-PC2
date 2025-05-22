@@ -5,17 +5,17 @@ from django.http import JsonResponse
 from .models import RegistroHumedad
 from django.db.models import Avg, Max, Min
 from django.utils.timezone import now
+from django.utils.timezone import localtime
 
 #----------------------------------------------------------------------
 # Devuelve los últimos 60 registros de humedad en formato JSON (para gráfico en tiempo real)
 def humedad_evolucion_json(request):
     datos = RegistroHumedad.objects.order_by('-timestamp')[:60][::-1]
     lista = [
-        {"timestamp": r.timestamp.strftime("%H:%M:%S"), "humedad": r.humedad}
+        {"timestamp": localtime(r.timestamp).strftime("%Y-%m-%d %H:%M:%S"), "humedad": r.humedad}
         for r in datos
     ]
     return JsonResponse(lista, safe=False)
-
 #----------------------------------------------------------------------
 # Devuelve el estado del sensor (conectado/desconectado)
 def estado_sensor(request):
@@ -24,9 +24,9 @@ def estado_sensor(request):
     return JsonResponse({'conectado': conectado})
 
 #----------------------------------------------------------------------
-# Devuelve el tiempo (en segundos) desde el último registro crítico (humedad > 80%)
+# Devuelve el tiempo (en segundos) desde el último registro crítico (humedad > 70%)
 def tiempo_desde_ultimo_critico(request):
-    ultimo = RegistroHumedad.objects.filter(humedad__gt=80).order_by('-timestamp').first()
+    ultimo = RegistroHumedad.objects.filter(humedad__gt=60).order_by('-timestamp').first()
     if ultimo:
         ahora = timezone.now()
         delta = ahora - ultimo.timestamp
@@ -52,7 +52,7 @@ def dashboard_view(request):
 #----------------------------------------------------------------------
 # Devuelve estadísticas generales de humedad (máximo, mínimo, promedio, actual)
 def estadisticas_humedad(request):
-    hoy = now().date()
+    hoy = timezone.localdate()
     datos = RegistroHumedad.objects.filter(timestamp__date=hoy)
     estadisticas = datos.aggregate(
         promedio=Avg('humedad'),
@@ -63,3 +63,67 @@ def estadisticas_humedad(request):
     actual = ultimo.humedad if ultimo else 0
     estadisticas['actual'] = actual
     return JsonResponse(estadisticas)
+
+#----------------------------------------------------------------------
+# Devuelve el historial de humedad por día (para el botón de historial)
+def historial_completo(request):
+    """
+    Reporte histórico diario, mensual, anual o por rango de fechas.
+    Devuelve: datos, máximo, mínimo, promedio, último valor y lista para gráfico.
+    """
+    datos = RegistroHumedad.objects.all().order_by('timestamp')
+    fecha = request.GET.get('fecha')
+    mes = request.GET.get('mes')
+    anio = request.GET.get('anio')
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+
+    # Filtrado
+    if fecha:
+        datos = datos.filter(timestamp__date=fecha)
+        filtro = f"Fecha: {fecha}"
+    elif mes:
+        year, month = mes.split('-')
+        datos = datos.filter(timestamp__year=year, timestamp__month=month)
+        filtro = f"Mes: {mes}"
+    elif anio:
+        datos = datos.filter(timestamp__year=anio)
+        filtro = f"Año: {anio}"
+    elif fecha_inicio and fecha_fin:
+        datos = datos.filter(timestamp__date__gte=fecha_inicio, timestamp__date__lte=fecha_fin)
+        filtro = f"Rango: {fecha_inicio} a {fecha_fin}"
+    else:
+        filtro = "Todo el historial"
+
+    # Indicadores del periodo filtrado
+    stats = datos.aggregate(
+        maximo=Max('humedad'),
+        minimo=Min('humedad'),
+        promedio=Avg('humedad'),
+    )
+    ultimo = datos.order_by('-timestamp').first()
+    stats['ultimo'] = ultimo.humedad if ultimo else None
+
+    if fecha:  # Solo un día
+        label_format = "%H:%M:%S"
+    else:      # Varios días, meses, años o rango
+        label_format = "%Y-%m-%d %H:%M:%S"
+
+    grafico = [
+        {"timestamp": localtime(d.timestamp).strftime(label_format), "humedad": d.humedad}
+        for d in datos
+    ]
+
+    return render(request, 'dashboard/historial_completo.html', {
+        'datos': datos,
+        'stats': stats,
+        'filtro': filtro,
+        'grafico': grafico,
+        'fecha': fecha,
+        'mes': mes,
+        'anio': anio,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+    })
+
+#----------------------------------------------------------------------

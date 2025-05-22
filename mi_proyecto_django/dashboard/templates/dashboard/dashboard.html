@@ -63,8 +63,141 @@
             </div>
             <div id="dataContent" class="hidden">
                 <h2>Data Histórica de Humedad</h2>
+                <!-- ...tu HTML arriba... -->
+
+                <form id="historialForm" style="margin-bottom: 15px;">
+                    <label>Fecha: <input type="date" name="fecha"></label>
+                    <label>Mes: <input type="month" name="mes"></label>
+                    <label>Año: <input type="number" name="anio" min="2000" max="2100" style="width:80px;"></label>
+                    <label>Desde: <input type="date" name="fecha_inicio"></label>
+                    <label>Hasta: <input type="date" name="fecha_fin"></label>
+                    <button type="submit" class="btn-historial">Buscar</button>
+                </form>
                 <div id="historial"></div>
-                <button class="btn-historial" onclick="mostrarHistorial()">Buscar por fecha</button>
+
+                <!-- Al final del archivo, antes de </body>: -->
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const form = document.getElementById('historialForm');
+                        const inputs = {
+                            fecha: form.elements['fecha'],
+                            mes: form.elements['mes'],
+                            anio: form.elements['anio'],
+                            fecha_inicio: form.elements['fecha_inicio'],
+                            fecha_fin: form.elements['fecha_fin']
+                        };
+
+                        function resetOthers(except) {
+                            for (const key in inputs) {
+                                if (key !== except) {
+                                    inputs[key].value = '';
+                                    inputs[key].disabled = except !== null;
+                                }
+                            }
+                            if (!except) {
+                                for (const key in inputs) {
+                                    inputs[key].disabled = false;
+                                }
+                            }
+                        }
+
+                        inputs.fecha.addEventListener('input', function () {
+                            resetOthers(this.value ? 'fecha' : null);
+                        });
+                        inputs.mes.addEventListener('input', function () {
+                            resetOthers(this.value ? 'mes' : null);
+                        });
+                        inputs.anio.addEventListener('input', function () {
+                            resetOthers(this.value ? 'anio' : null);
+                        });
+                        inputs.fecha_inicio.addEventListener('input', function () {
+                            if (inputs.fecha_inicio.value || inputs.fecha_fin.value) {
+                                resetOthers('fecha_inicio');
+                                inputs.fecha_fin.disabled = false;
+                            } else {
+                                resetOthers(null);
+                            }
+                        });
+                        inputs.fecha_fin.addEventListener('input', function () {
+                            if (inputs.fecha_inicio.value || inputs.fecha_fin.value) {
+                                resetOthers('fecha_inicio');
+                                inputs.fecha_inicio.disabled = false;
+                            } else {
+                                resetOthers(null);
+                            }
+                        });
+
+                        // Submit del formulario
+                        form.addEventListener('submit', function (e) {
+                            e.preventDefault();
+                            let params = [];
+                            // Prioridad: fecha > mes > año > rango
+                            if (form.fecha.value) {
+                                params.push('fecha=' + form.fecha.value);
+                            } else if (form.mes.value) {
+                                params.push('mes=' + form.mes.value);
+                            } else if (form.anio.value) {
+                                params.push('anio=' + form.anio.value);
+                            } else if (form.fecha_inicio.value && form.fecha_fin.value) {
+                                params.push('fecha_inicio=' + form.fecha_inicio.value);
+                                params.push('fecha_fin=' + form.fecha_fin.value);
+                            }
+                            const url = `{% url 'historial_completo' %}` + (params.length ? '?' + params.join('&') : '');
+                            // ...código previo...
+                            axios.get(url)
+                                .then(response => {
+                                    document.getElementById('historial').innerHTML = response.data;
+                                    // Espera a que el DOM del fragmento esté listo
+                                    setTimeout(() => {
+                                        // Intenta dibujar el gráfico si existe el canvas y los datos
+                                        const graficoScript = document.getElementById('grafico-historial');
+                                        const canvas = document.getElementById('graficoHistorial');
+                                        if (graficoScript && canvas) {
+                                            const grafico = JSON.parse(graficoScript.textContent);
+                                            if (grafico.length > 0) {
+                                                const labelList = grafico.map(d => d.timestamp);
+                                                const dataList = grafico.map(d => d.humedad);
+                                                const ctxHist = canvas.getContext('2d');
+                                                new Chart(ctxHist, {
+                                                    type: 'line',
+                                                    data: {
+                                                        labels: labelList,
+                                                        datasets: [{
+                                                            label: 'Humedad (%)',
+                                                            data: dataList,
+                                                            borderColor: 'blue',
+                                                            backgroundColor: 'rgba(0,0,255,0.1)',
+                                                            fill: false,
+                                                            tension: 0.2,
+                                                            pointRadius: 2
+                                                        }]
+                                                    },
+                                                    options: {
+                                                        responsive: true,
+                                                        plugins: {
+                                                            legend: { display: true }
+                                                        },
+                                                        scales: {
+                                                            x: { display: true, title: { display: true, text: 'Fecha y Hora' } },
+                                                            y: { display: true, title: { display: true, text: 'Humedad (%)' } }
+                                                        }
+                                                    }
+                                                });
+                                            } else {
+                                                canvas.style.display = 'none';
+                                                const msg = document.createElement('p');
+                                                msg.textContent = 'No hay datos para graficar en este periodo.';
+                                                msg.style.color = 'red';
+                                                msg.style.fontWeight = 'bold';
+                                                canvas.parentNode.appendChild(msg);
+                                            }
+                                        }
+                                    }, 0);
+                                });
+                            // ...código posterior...
+                        });
+                    });
+                </script>
             </div>
         </div>
     </div>
@@ -116,18 +249,6 @@
                     chart.update();
                 });
         }
-
-        // Historial
-        function mostrarHistorial() {
-            const fecha = prompt("Ingrese fecha (YYYY-MM-DD):");
-            if (!fecha) return;
-            axios.get("{% url 'historial_por_dia' %}?fecha=" + fecha)
-                .then(response => {
-                    document.getElementById('historial').innerHTML = response.data;
-                    document.getElementById('dataContent').classList.remove('hidden');
-                });
-        }
-
         // Inicialización y actualización periódica
         cargarEstadisticas();
         actualizarGrafico();
@@ -150,4 +271,5 @@
     </script>
 
 </body>
+
 </html>
