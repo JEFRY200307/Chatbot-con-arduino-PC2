@@ -6,6 +6,8 @@ from .models import RegistroHumedad
 from django.db.models import Avg, Max, Min
 from django.utils.timezone import now
 from django.utils.timezone import localtime
+from django.http import HttpResponse
+import csv
 
 #----------------------------------------------------------------------
 # Devuelve los últimos 60 registros de humedad en formato JSON (para gráfico en tiempo real)
@@ -127,3 +129,29 @@ def historial_completo(request):
     })
 
 #----------------------------------------------------------------------
+# Exporta el historial completo a un archivo CSV
+def descargar_historial_csv(request):
+    # Filtra los datos igual que en historial_completo
+    fecha = request.GET.get('fecha')
+    mes = request.GET.get('mes')
+    anio = request.GET.get('anio')
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+
+    datos = RegistroHumedad.objects.all()
+    if fecha:
+        datos = datos.filter(timestamp__date=fecha)
+    elif mes:
+        datos = datos.filter(timestamp__month=mes.split('-')[1], timestamp__year=mes.split('-')[0])
+    elif anio:
+        datos = datos.filter(timestamp__year=anio)
+    elif fecha_inicio and fecha_fin:
+        datos = datos.filter(timestamp__date__range=[fecha_inicio, fecha_fin])
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="historial_humedad.csv"'
+    writer = csv.writer(response)
+    writer.writerow(['Fecha y Hora', 'Humedad (%)'])
+    for d in datos:
+        writer.writerow([d.timestamp, d.humedad])
+    return response

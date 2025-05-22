@@ -72,6 +72,7 @@
                     <label>Desde: <input type="date" name="fecha_inicio"></label>
                     <label>Hasta: <input type="date" name="fecha_fin"></label>
                     <button type="submit" class="btn-historial">Buscar</button>
+                    <button type="button" id="btnDescargarCSV" class="btn-historial" disabled>Descargar en CSV</button>
                 </form>
                 <div id="historial"></div>
 
@@ -128,10 +129,10 @@
                         });
 
                         // Submit del formulario
+                        let ultimaBusqueda = '';
                         form.addEventListener('submit', function (e) {
                             e.preventDefault();
                             let params = [];
-                            // Prioridad: fecha > mes > año > rango
                             if (form.fecha.value) {
                                 params.push('fecha=' + form.fecha.value);
                             } else if (form.mes.value) {
@@ -142,6 +143,8 @@
                                 params.push('fecha_inicio=' + form.fecha_inicio.value);
                                 params.push('fecha_fin=' + form.fecha_fin.value);
                             }
+                            ultimaBusqueda = params.join('&');
+                            document.getElementById('btnDescargarCSV').disabled = !ultimaBusqueda;
                             const url = `{% url 'historial_completo' %}` + (params.length ? '?' + params.join('&') : '');
                             // ...código previo...
                             axios.get(url)
@@ -195,6 +198,12 @@
                                     }, 0);
                                 });
                             // ...código posterior...
+                        });
+
+                        document.getElementById('btnDescargarCSV').addEventListener('click', function () {
+                            if (!ultimaBusqueda) return;
+                            const url = `{% url 'descargar_historial_csv' %}` + (ultimaBusqueda ? '?' + ultimaBusqueda : '');
+                            window.location.href = url;
                         });
                     });
                 </script>
